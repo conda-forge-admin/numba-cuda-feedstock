@@ -12,7 +12,17 @@ source:
   sha256: 52a41fdb295144fd68a86ee4d66b02bf88d58f885feb13adf815edb3f4ea31af
 
 build:
-  script: python -m pip install . -vv
+  script:
+    # Cross-compile to linux-aarch64: gcc_impl_linux-aarch64=14.3.0=*_19 ships without
+    # a working liblto_plugin.so at the path GCC's driver hands to ld. LTO isn't used
+    # here, so dropping the plugin is a no-op on the produced binary. Same workaround
+    # as https://github.com/conda-forge/libnvshmem-feedstock/pull/35.
+    - if: build_platform != target_platform and target_platform == "linux-aarch64"
+      then:
+        - export CFLAGS="${CFLAGS} -fno-use-linker-plugin"
+        - export CXXFLAGS="${CXXFLAGS} -fno-use-linker-plugin"
+        - export LDFLAGS="${LDFLAGS} -fno-use-linker-plugin"
+    - python -m pip install . -vv
   number: 0
   skip: [osx or ppc64le]
 
